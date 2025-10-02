@@ -28,11 +28,16 @@
         <None Include="..\public\Partas_d00b_00a icon.png" Pack="true" PackagePath="\">
             <Link>Assets\icon.png</Link>
         </None>
+        <Compile Include="Spec.fs" />
+        <Compile Include="Types.fs" />
+        <Compile Include="Utils.fs" />
+        <Compile Include="Fantomas.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Fantomas.Core" Version="7.0.3" />
+      <PackageReference Include="Str" Version="0.19.0" />
       <PackageReference Include="YamlDotNet" Version="16.3.0" />
     </ItemGroup>
 

@@ -27,20 +27,14 @@ let tests =
                     ""
                     (InterfaceAttributeTypes.Simple("test", [ InterfaceAttributeType.Simple "float array"; InterfaceAttributeType.Simple "int array" ]))
             }
-            test "Reserved Identifiers in expressions" {
-                Expr.make "use"
-                |> function
-                    | Expr.Ident(value) -> value.Text
-                    | _ -> failwith ""
-                |> Flip.Expect.equal "" "use"
-            }
+
         ]
         testList "Schema Build" [
             test "Reserved identifiers" {
                 let schema = {
+                    Config = Config.Default
                     Namespace = None
                     RequiredOpens = []
-                    RootTypeName = None
                     Interfaces = [
                         makeType "Test" [
                             "test" =>> nameof float
@@ -62,9 +56,9 @@ type Test =
             }
             test "Namespace" {
                 let schema = {
+                    Config = Config.Default
                     Namespace = Some "Test.Namespace"
                     RequiredOpens = []
-                    RootTypeName = None
                     Interfaces = [
                         makeType "Test" [
                             "test" =>> nameof float
@@ -87,11 +81,11 @@ type Test =
             
             test "Namespace and Opens" {
                 let schema = {
+                    Config = Config.Default
                     Namespace = Some "Test.Namespace"
                     RequiredOpens = [
                         "Fable.Core"
                     ]
-                    RootTypeName = None
                     Interfaces = [
                         makeType "Test" [
                             "test" =>> nameof float
@@ -115,9 +109,9 @@ type Test =
             }
             test "Object Types" {
                 let schema = {
+                    Config = Config.Default
                     Namespace = None
                     RequiredOpens = [ ]
-                    RootTypeName = None
                     Interfaces = [
                         makeType "Test" [
                             "test" =>> object "Param"
@@ -130,6 +124,49 @@ type Test =
 [<Erase>]
 type Test =
     static member inline test(props: IParamProp list) : ITestProp = unbox("test", createObj (unbox props))"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
+            
+            test "Special Enum Types" {
+                let schema = {
+                    Config = Config.Default
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" =>> object "Param"
+                            "enums" ==> [
+                                nameof string
+                                [
+                                    box 5
+                                    box 3
+                                    box true
+                                    box false
+                                ]
+                            ]
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+module Test =
+    [<Erase>]
+    type enums =
+        static member inline ofString(value: string) : ITestProp = unbox("enums", value)
+        static member inline ``5``: ITestProp = unbox("enums", 5)
+        static member inline ``3``: ITestProp = unbox("enums", 3)
+        static member inline true': ITestProp = unbox("enums", true)
+        static member inline false': ITestProp = unbox("enums", false)
+
+[<Erase>]
+type Test =
+    static member inline test(props: IParamProp list) : ITestProp = unbox("test", createObj (unbox props))"""
+                
                 schema
                 |> Schema.build
                 |> _.Trim()

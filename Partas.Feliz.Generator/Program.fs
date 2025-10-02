@@ -7,489 +7,77 @@ open Fantomas.Core
 open Fantomas.FCS
 open Fantomas.FCS.Text
 open Fantomas.Core.SyntaxOak
-open YamlDotNet.Serialization
-open YamlDotNet.Serialization.NamingConventions
+open Spec
+open Utils
+open Types
+open Partas.Feliz.Generator.Fantomas
 
 [<AutoOpen>]
-module Constants =
-    [<Literal>]
-    let number = "%MACRO%number"
-    [<Literal>]
-    let internal OBJECT = "%MACRO%createObj "
-    let object = (+) OBJECT
-    [<Literal>]
-    let numberArray = "%MACRO%number array"
-    [<Literal>]
-    let internal NUMBER = number
-    [<Literal>]
-    let internal NUMBER_ARRAY = numberArray
-[<AutoOpen>]
-module Scaffold =
-    let mangleReservedKeywords =
-      let reserved =
-        [
-          "abstract"; "and"; "as"; "assert"; "base"; "begin"; "class"; "default"
-          "delegate"; "do"; "done"; "downcast"; "downto"; "elif"; "else"
-          "end"; "exception"; "extern"; "false"; "finally"; "fixed"
-          "fun"; "function"; "global"; "if"; "in"; "inherit"; "inline"
-          "interface"; "internal"; "lazy"; "let"; "match"; "member"
-          "module"; "mutable"; "namespace"; "new"; "null"; "of"; "open"
-          "or"; "override"; "private"; "public"; "rec"; "return"
-          "static"; "struct"; "then"; "to"; "true"; "try"; "type"
-          "upcast"; "use"; "val"; "void"; "when"; "while" ;"with"; "yield"
-          "const"
-          // not actually reserved, but better not to obfuscate
-          "not"; "select"
-          // reserved because they are keywords in OCaml
-          "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "sig"
-          // reserved for future expansion
-          "break"; "checked"; "component"; "constraint"; "continue"; "event"
-          "external"; "include"; "mixin"; "parallel"; "process"; "protected"
-          "pure"; "sealed"; "tailcall"; "trait"; "virtual"
-        ]
-        |> Set.ofList
-      fun s -> if reserved.Contains s then s + "'" else s
-      
-    type SingleTextNode with
-        static member make text = SingleTextNode(text, Range.Zero)
-        static member makeOptional (text: string) = SingleTextNode.make $"?{text}"
-        member this.MakeOptional with get() =
-            this.Text |> SingleTextNode.makeOptional
-    type MultipleTextsNode with
-        static member make texts = MultipleTextsNode([ for text in texts do SingleTextNode.make text ], Range.Zero)
-        static member make text = SyntaxOak.MultipleTextsNode.make [ text ]
-    type IdentifierOrDot with
-        static member makeIdent text = IdentifierOrDot.Ident <| SingleTextNode.make text
-        static member makeDot with get() = IdentifierOrDot.KnownDot <| SingleTextNode.make "."
-        static member ListFromString (text: string) =
-            text.Split '.'
-            |> Array.map IdentifierOrDot.makeIdent
-            |> fun arr ->
-                let length = arr.Length
-                arr
-                |> Array.mapi (fun idx ident ->
-                        if idx = length then
-                            [ ident ]
-                        else
-                            [ ident; IdentifierOrDot.makeDot ]
-                    )
-            |> Array.toList
-            |> List.collect id
-    type IdentListNode with
-        static member make (text: string) = IdentListNode([ IdentifierOrDot.makeIdent text ], Range.Zero)
-        static member make (text: string list) = IdentListNode(text |> List.map IdentifierOrDot.makeIdent, Range.Zero)
-        member this.identList with get() =
-            this.Content
-            |> List.choose (function
-                | IdentifierOrDot.Ident ident ->
-                    ident.Text
-                    |> Some
-                | _ -> None
-                )
-        member this.firstIdent with get() =
-            this.identList |> List.head
-        member this.lastIdent with get() =
-            this.identList |> List.last
-        member this.isStropped = this.firstIdent |> _.StartsWith('`')
-        member this.isKebab =
-            this.Content
-            |> List.exists(function
-                | IdentifierOrDot.Ident ident ->
-                    ident.Text.Contains('-')
-                | IdentifierOrDot.KnownDot ident ->
-                    ident.Text.Contains('-')
-                | _ -> false
-                )
-        member this.toCamelCase =
-            this.Content
-            |> List.map(function
-                | IdentifierOrDot.Ident ident
-                | IdentifierOrDot.KnownDot ident ->
-                    ident.Text
-                | _ -> ""
-                    )
-            |> List.toArray
-            |> String.concat ""
-            |> _.Trim('`')
-            |> _.Split('-')
-            |> Array.mapi(
-                fun i str ->
-                    if i = 0 then str
-                    else
-                    let chars = str.ToCharArray()
-                    chars[0] <- chars[0] |> System.Char.ToUpperInvariant
-                    chars |> string
-                )
-            |> String.concat ""
-    type AttributeNode with
-        static member make text =
-            AttributeNode( IdentListNode.make text, None, None, Range.Zero )
-    type AttributeListNode with
-        static member makeOpening with get() = SingleTextNode.make "[<"
-        static member makeClosing with get() = SingleTextNode.make ">]"
-        static member make texts =
-            AttributeListNode(
-                AttributeListNode.makeOpening,
-                [ for text in texts do AttributeNode.make text ],
-                AttributeListNode.makeClosing,
-                Range.Zero
-                )
-        static member make text =
-            AttributeListNode.make [ text ]
-    type MultipleAttributeListNode with
-        static member make (texts: string seq seq) =
-            MultipleAttributeListNode([ for text in texts do AttributeListNode.make text ], Range.Zero)
-        static member make (text: string seq)= MultipleAttributeListNode.make [ text ]
-        static member make (text: string)= MultipleAttributeListNode.make [ text ]
-    type PatParenNode with
-        static member makeOpening with get() = SingleTextNode.make "("
-        static member makeClosing with get() = SingleTextNode.make ")"
-        static member make pattern = PatParenNode(PatParenNode.makeOpening, pattern, PatParenNode.makeClosing, Range.Zero)
-    type PatParameterNode with
-        static member make ident typ = PatParameterNode(None, Pattern.Null(ident), typ, Range.Zero)
-    type PatTupleNode with
-        static member makeItem (node: SingleTextNode): Choice<Pattern, SingleTextNode> = Choice2Of2 node
-        static member makeItem (node: Pattern): Choice<Pattern, SingleTextNode> = Choice1Of2 node
-        static member makeConstructor (members: (SingleTextNode * Type) list) =
-            PatTupleNode(
-                [ for ident,typ in members do
-                    yield Pattern.Parameter(PatParameterNode.make ident.MakeOptional (Some typ)) |> PatTupleNode.makeItem
-                    yield SingleTextNode.make "," |> PatTupleNode.makeItem
-                ] |> List.cutOffLast, Range.Zero
-                )
-    type MemberDefnInheritNode with
-        /// Gets the last identifier in a chain which should be the type without accessors
-        member this.tryGetIdentifier with get() =
-            let rec getIdent: Node -> string option = function
-                | :? IdentListNode as ident ->
-                    ident.lastIdent
-                    |> Some
-                | :? TypeAppPrefixNode as node ->
-                    getIdent node.Children[0]
-                | _ -> None
-            this.Children[1] |> getIdent
-    type ITypeDefn with
-        member this.getInheritMembers with get() =
-            this.Members
-            |> List.choose (function MemberDefn.Inherit node -> Some node | _ -> None)
-        member this.getInterfaceMembers with get() =
-            this.Members
-            |> List.choose (function MemberDefn.Interface node -> Some node | _ -> None)
-        member this.getAbstractMembers with get() =
-            this.Members
-            |> List.choose(function MemberDefn.AbstractSlot node -> Some node | _ -> None)
-        member this.getIdentifier = this.TypeName.Identifier.lastIdent
-        member this.getAttributes = this.TypeName.Attributes
-        member this.getInheritMembersIdentifiers with get() =
-            this.getInheritMembers
-            |> List.map _.tryGetIdentifier
-            |> List.choose id
-    type TypeDefnRegularNode with
-        member this.TypeDefn = this :> ITypeDefn
-    type XmlDocNode with
-        static member make (docs: string seq) =
-            XmlDocNode([|
-                yield "/// <summary>"
-                for line in docs do
-                    for subline in
-                        line |> Seq.chunkBySize 120
-                        |> Seq.map (string >> sprintf "/// %s")
-                        do yield subline
-                yield "/// </summary>"
-            |], Range.Zero)
-    type MemberDefnInheritNode with
-        static member make identifier =
-            MemberDefnInheritNode(
-                SingleTextNode.make "inherit",
-                Type.LongIdent (IdentListNode.make identifier),
-                Range.Zero
-                )
-    type MemberDefnAbstractSlotNode with
-        member this.getIdentifierTypeTuple =
-            this.Identifier.Text, this.Type
-        static member makeSimple(
-            identifier: string,
-            typ: Type,
-            ?docs: string seq,
-            ?attributes: string seq,
-            ?withGetSet: bool
-            ) =
-            let withGetSet = defaultArg withGetSet false
-            MemberDefnAbstractSlotNode(
-                docs |> Option.map XmlDocNode.make,
-                attributes |> Option.map MultipleAttributeListNode.make,
-                MultipleTextsNode.make ["abstract"; "member"],
-                SingleTextNode.make identifier,
-                None,
-                typ,
-                if withGetSet then
-                    MultipleTextsNode.make [ "with"; "get,"; "set" ]
-                    |> Some
-                else None
-                ,Range.Zero
-                )
-    type MemberDefn with
-        static member makeInherit identifier =
-            MemberDefnInheritNode.make identifier |> MemberDefn.Inherit
-        static member makeAbstract (attrName: string, typ: Type) =
-            MemberDefnAbstractSlotNode.makeSimple(attrName, typ)
-            |> MemberDefn.AbstractSlot
-        static member makeExtensionGetSetWith (name: string, typ: Type, ?inlineOverload: string) =
-            MemberDefnPropertyGetSetNode(
-                None,Some(MultipleAttributeListNode.make "Erase"),MultipleTextsNode.make "member",None,None,
-                IdentListNode.make $"_.{name}", SingleTextNode.make "with",
-                PropertyGetSetBindingNode(
-                      None, None, None, SingleTextNode.make "set", [
-                          Pattern.Parameter(PatParameterNode.make (SingleTextNode.make "_") (Some typ))
-                          |> PatParenNode.make
-                          |> Pattern.Paren
-                      ], None, SingleTextNode.make "=", Expr.Null(SingleTextNode.make "()"), Range.Zero
-                    ),
-                SingleTextNode.make "and" |> Some,
-                PropertyGetSetBindingNode(
-                    None,
-                    MultipleAttributeListNode.make "Erase" |> Some,
-                    None, SingleTextNode.make "get", [
-                        Pattern.Unit(UnitNode(PatParenNode.makeOpening, PatParenNode.makeClosing, Range.Zero))
-                    ],
-                    BindingReturnInfoNode(SingleTextNode.make ":", typ, Range.Zero)
-                    |> Some,
-                    SingleTextNode.make "=",
-                    Expr.Ident(SingleTextNode.make "JS.undefined"),
-                    Range.Zero
-                    ) |> Some,
-                Range.Zero
-                ) |> MemberDefn.PropertyGetSet
-        static member makeExtensionGetSet (name: string) (typ: Type) =
-            MemberDefn.makeExtensionGetSetWith(name, typ)
-    type TypeNameNode with
-        static member makeSimple (
-            identifier: string,
-            ?docs: string list,
-            ?attributes: string list,
-            ?suffix: string
-            ) =
-            let identifier = mangleReservedKeywords identifier
-            TypeNameNode(
-                docs |> Option.map XmlDocNode.make,
-                attributes |> Option.map MultipleAttributeListNode.make,
-                SingleTextNode.make "type",
-                None,
-                IdentListNode.make identifier,
-                None,
-                [],
-                None,
-                SingleTextNode.make "=" |> Some,
-                suffix |> Option.map SingleTextNode.make,
-                Range.Zero
-                )
-        static member makeExtension (identifier: IdentListNode) =
-            TypeNameNode(None,None,SingleTextNode.make "type", None,
-                         identifier, None, [], None,
-                         SingleTextNode.make "with" |> Some, None, Range.Zero)
-        static member makeExtension (identifier: string) =
-            IdentListNode.make identifier |> TypeNameNode.makeExtension
-    type TypeDefnRegularNode with
-        static member make members typeNameNode =
-            TypeDefnRegularNode(typeNameNode, members, Range.Zero)
-    type ModuleDecl with
-        static member wrapInNestedModule name (attributes: string seq option) decls =
-            NestedModuleNode(
-                None, attributes |> Option.map MultipleAttributeListNode.make,
-                SingleTextNode.make "module",None,false,IdentListNode.make name,
-                SingleTextNode.make "=", decls, Range.Zero
-                )
-            |> ModuleDecl.NestedModule
-    type BindingReturnInfoNode with
-        static member make typ =
-            BindingReturnInfoNode(
-                colon = SingleTextNode.make ":",
-                t = typ,
-                range = Range.Zero
-                )
-        static member make typIdent =
-            SingleTextNode.make typIdent
-            |> Type.Anon
-            |> BindingReturnInfoNode.make
-    type Expr with
-        static member make text =
-            SingleTextNode.make text
-            |> Expr.Ident
-    type ExprInfo = {
-        FunctionName: string
-        ParamName: string
+module internal Impl =
+    type UnshittifiedTypes = {
+        HasSimple: bool
+        HasEnums: bool
+        MappedTypes: InterfaceAttributeType list
     }
-    type BindingNode with
+    let unshittifyEnums: obj list -> InterfaceAttributeEnumType list = List.map (function
+        | :? string as typ -> InterfaceAttributeEnumType.String typ
+        | :? int as typ -> InterfaceAttributeEnumType.Integer typ
+        | :? float as typ -> InterfaceAttributeEnumType.Float typ
+        | :? bool as typ -> InterfaceAttributeEnumType.Boolean typ
+        | typ -> failwith $"Unhandled Enum type: {typ} of type {typ.GetType().FullName}"
+        )
     
-        static member makeEnum (functionName, ?attrName: string, ?returnType: string , ?isInline: bool, ?isStatic: bool) =
-            let isStatic = defaultArg isStatic true
-            let isInline = defaultArg isInline true
-            let leadingKeyword =
-                if isStatic then
-                    MultipleTextsNode.make [ "static"; "member" ]
-                else
-                    MultipleTextsNode.make [ "member" ]
-            let expr =
-                match attrName with
-                | Some attrName ->
-                    $"unbox(\"{attrName}\", \"{functionName}\")"
-                | _ -> $"unbox \"{functionName}\""
-                |> SingleTextNode.make
-                |> Expr.Ident
-            let functionName = mangleReservedKeywords functionName
-            BindingNode(
-                xmlDoc = None,
-                attributes = None,
-                leadingKeyword = leadingKeyword,
-                isMutable = false,
-                inlineNode = (if isInline then SingleTextNode.make "inline" |> Some else None),
-                accessibility = None,
-                functionName =  Choice1Of2 (IdentListNode.make functionName),
-                genericTypeParameters = None,
-                parameters = [ ],
-                returnType = (returnType |> Option.map BindingReturnInfoNode.make),
-                equals = SingleTextNode.make "=",
-                expr = expr,
-                range = Range.Zero
-                )
-        static member make (functionName, paramType: string, expr: ExprInfo -> string, ?returnType: string, ?paramName, ?isInline: bool, ?isStatic: bool) =
-            let isStatic = defaultArg isStatic true
-            let isInline = defaultArg isInline true
-            let paramName = defaultArg paramName "value"
-            let leadingKeyword =
-                if isStatic then
-                    MultipleTextsNode.make [ "static"; "member" ]
-                else
-                    MultipleTextsNode.make [ "member" ]
-            let normalizedFunctionName = mangleReservedKeywords functionName
-            BindingNode(
-                xmlDoc = None,
-                attributes = None,
-                leadingKeyword = leadingKeyword,
-                isMutable = false,
-                inlineNode = (if isInline then SingleTextNode.make "inline" |> Some else None),
-                accessibility = None,
-                functionName =  Choice1Of2 (IdentListNode.make normalizedFunctionName),
-                genericTypeParameters = None,
-                parameters = [
-                    (SingleTextNode.make paramName, SingleTextNode.make paramType |> Type.Anon |> Some)
-                    ||> PatParameterNode.make
-                    |> Pattern.Parameter
-                    |> PatParenNode.make
-                    |> Pattern.Paren
-                ],
-                returnType = (returnType |> Option.map BindingReturnInfoNode.make),
-                equals = SingleTextNode.make "=",
-                expr = Expr.make (expr { ParamName = paramName; FunctionName = functionName }),
-                range = Range.Zero
-                )
-        static member makeSimple (functionName, paramType, ?returnType: string) =
-            let expr = fun paramName -> $"unbox(\"{paramName.FunctionName}\", {paramName.ParamName})"
-            BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
-        static member makeObject (functionName, paramType: string, ?returnType: string) =
-            let expr = fun paramName -> $"unbox(\"{paramName.FunctionName}\", createObj (unbox {paramName.ParamName}))"
-            let paramType = $"I{paramType}Prop list"
-            BindingNode.make(functionName, paramType, expr, ?returnType = returnType, paramName = "props")
-    type NestedModuleNode with
-        static member make (name: string) decls =
-            let name = mangleReservedKeywords name
-            NestedModuleNode(
-                xmlDoc = None,
-                attributes = Some(MultipleAttributeListNode.make "Erase"),
-                moduleKeyword = SingleTextNode.make "module",
-                accessibility = None,
-                isRecursive = false,
-                identifier = IdentListNode.make name,
-                equalsNode = SingleTextNode.make "=",
-                decls = decls,
-                range = Range.Zero
-                )
-    let finaliseTypes (e: TypeDefnRegularNode list) =
-        let decls = e |> List.map (TypeDefn.Regular >> ModuleDecl.TypeDefn)
-        Oak([], [ ModuleOrNamespaceNode(None, decls, Range.Zero) ], Range.Zero)
-        |> CodeFormatter.FormatOakAsync
-        |> Async.RunSynchronously
-        |> printfn "%s"
-[<RequireQualifiedAccess>]
-type InterfaceAttributeType =
-    | Simple of string
-    | Enum of string list
-    | Object of string
-type InterfaceAttributeTypes =
-    | Simple of attrName: string * types: InterfaceAttributeType list
-    | Mixed of attrName: string * types: InterfaceAttributeType list
-    | Enum of attrName: string * types: string list
-[<RequireQualifiedAccess>]
-type InterfaceType =
-    | Simple of typName: string * attrs: InterfaceAttributeTypes list
-    | Mixed of typName: string * attrs: InterfaceAttributeTypes list
-module InterfaceType =
-    let create typName (attrs: InterfaceAttributeTypes list) =
-        let isComplex =
-            attrs
-            |> List.exists (_.IsSimple >> not)
-        if isComplex then
-            InterfaceType.Mixed(typName, attrs)
-        else
-            InterfaceType.Simple(typName, attrs)
-    let private deconstruct = function
-        | InterfaceType.Simple(typName, attrs)
-        | InterfaceType.Mixed(typName, attrs) -> typName,attrs
-    let attrs = deconstruct >> snd
-    let typeName = deconstruct >> fst
-type InterfaceType with
-    static member Create(typeName, attrs) = InterfaceType.create typeName attrs
-    member this.Attributes = this |> InterfaceType.attrs
-    member this.TypeName = this |> InterfaceType.typeName
-type Schema = {
-    Namespace: string option
-    RequiredOpens: string list
-    RootTypeName: string option
-    Interfaces: InterfaceType list
-}
+    let unshittifyMacros = List.collect (function
+        | InterfaceAttributeType.Simple NUMBER ->
+            [ InterfaceAttributeType.Simple "float"; InterfaceAttributeType.Simple "int" ]
+        | InterfaceAttributeType.Simple NUMBER_ARRAY ->
+            [ InterfaceAttributeType.Simple "float array"; InterfaceAttributeType.Simple "int array" ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(OBJECT) ->
+            [ InterfaceAttributeType.Object (typ.Substring(OBJECT.Length)) ]
+        | typ -> [ typ ]
+            )
+        
+    let unshittify (typs: obj list) =
+        let mutable hasSimple: bool = false
+        let mutable hasEnums: bool = false
+        let simple = fun typ ->
+            hasSimple <- true
+            InterfaceAttributeType.Simple typ
+        let enum = fun typ ->
+            hasEnums <- true
+            unshittifyEnums typ
+            |> InterfaceAttributeType.Enum
+        typs
+        |> List.map(function
+            | :? string as typ -> simple typ
+            | :? (obj list) as typs -> enum typs
+            | typ -> failwith $"Unhandled type value {typ} of type {typ.GetType().FullName}"
+            )
+        |> fun mappedTypes ->
+            {
+                HasSimple = hasSimple
+                HasEnums = hasEnums
+                MappedTypes = mappedTypes |> unshittifyMacros
+            }
+            
+            
+
 
 [<AutoOpen>]
 module Operators =
-
     let (==>) (x: string) (typs: obj list) =
-        let mutable hasSimple: bool = false
-        let mutable hasEnums: bool = false
-        let mappedTypes =
-            typs
-            |> List.map (function
-                | :? string as s ->
-                    hasSimple <- true
-                    InterfaceAttributeType.Simple s
-                | :? (string list) as s ->
-                    hasEnums <- true
-                    InterfaceAttributeType.Enum s
-                | t -> failwith $"Unhandled AttributeType: {t.GetType()} \n Value: {t}")
-            |> List.collect (function
-                | InterfaceAttributeType.Simple NUMBER ->
-                    [
-                        InterfaceAttributeType.Simple "float"
-                        InterfaceAttributeType.Simple "int"
-                    ]
-                | InterfaceAttributeType.Simple NUMBER_ARRAY ->
-                    [
-                        InterfaceAttributeType.Simple "float array"
-                        InterfaceAttributeType.Simple "int array"
-                    ]
-                | InterfaceAttributeType.Simple text when text.StartsWith(OBJECT) ->
-                    [ InterfaceAttributeType.Object (text.Substring(OBJECT.Length)) ]
-                | normTyp -> [ normTyp ])
-        match hasSimple,hasEnums with
-        | true, true ->
+        match unshittify typs with
+        | { HasSimple = true; HasEnums = true; MappedTypes = mappedTypes } ->
             InterfaceAttributeTypes.Mixed(x, mappedTypes)
-        | true, _ ->
+        | { HasSimple = true; MappedTypes = mappedTypes } ->
             InterfaceAttributeTypes.Simple(x, mappedTypes)
-        | _, true ->
+        | { HasEnums = true; MappedTypes = mappedTypes } ->
             let mappedTypes =
-                typs
-                |> List.map (function
-                    | :? (string list) as s -> s
+                mappedTypes
+                |> List.collect (function
+                    | InterfaceAttributeType.Enum typs -> typs
                     | _ -> failwith "UNREACHABLE")
-            InterfaceAttributeTypes.Enum(x, List.collect id mappedTypes)
+            InterfaceAttributeTypes.Enum(x, mappedTypes)
         | _ -> InterfaceAttributeTypes.Simple(x, [])
     let (=>>) (x: string) (value: string) =
         match value with
@@ -510,9 +98,23 @@ module Operators =
     let inline makeType text (attrs: InterfaceAttributeTypes list) = InterfaceType.create text attrs
 
 module Schema =
+    let handleOpens { RequiredOpens = opens } =
+        match opens with
+        | [] -> []
+        | _ ->
+            opens
+            |> List.map (
+                IdentListNode.make
+                >> fun openName ->
+                    OpenModuleOrNamespaceNode(openName, Range.Zero)
+                >> Open.ModuleOrNamespace
+                )
+            |> OpenListNode
+            |> ModuleDecl.OpenList
+            |> List.singleton
     let build (schema: Schema) =
-        let makePropInterfaceName typName =
-            "I" + typName + "Prop"
+        let makePropInterfaceName = schema.Config.AttributeReturnTypes.Mapping
+            
         let makePropInterfaceType =
             TypeNameNode.makeSimple
             >> TypeDefnRegularNode.make [
@@ -523,45 +125,26 @@ module Schema =
             ]
             >> TypeDefn.Regular
             >> ModuleDecl.TypeDefn
+        let makeSimpleMembers propInterfaceName =
+            InterfaceAttributeTypes.unsafeSimpleAttrPairs
+            >> List.map (function
+                | attrName, InterfaceAttributeType.Simple typ ->
+                    BindingNode.makeSimple(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.Object typ ->
+                    BindingNode.makeObject(attrName, typ, propInterfaceName)
+                | _ -> failwith "UNREACHABLE"
+                >> MemberDefn.Member
+                )
+            
         [
-            match schema with
-            | { RequiredOpens = [] } ->
-                ()
-            | { RequiredOpens = opens } ->
-                yield
-                    opens
-                    |> List.map (
-                        IdentListNode.make
-                        >> fun opener ->
-                            OpenModuleOrNamespaceNode(opener, Range.Zero)
-                        >> Open.ModuleOrNamespace
-                        )
-                    |> OpenListNode
-                    |> ModuleDecl.OpenList
-            match schema with
-            | { RootTypeName = Some name } ->
-                yield makePropInterfaceType name
-            | _ -> ()
+            yield! handleOpens schema
             for interfaceDef in schema.Interfaces do
                 let propInterfaceName = makePropInterfaceName interfaceDef.TypeName
+                let makeSimpleMembers' = makeSimpleMembers propInterfaceName
                 yield makePropInterfaceType propInterfaceName
                 match interfaceDef with
                 | InterfaceType.Simple(typName, attrs) ->
-                    let members =
-                        attrs
-                        |> List.collect (function
-                            | InterfaceAttributeTypes.Simple(attrName, typs) ->
-                                typs
-                                |> List.map(function
-                                    | InterfaceAttributeType.Simple typ ->
-                                        BindingNode.makeSimple(attrName, typ, propInterfaceName)
-                                    | InterfaceAttributeType.Object typ ->
-                                        BindingNode.makeObject(attrName, typ, propInterfaceName)
-                                    | _ -> failwith "UNREACHABLE"
-                                    >> MemberDefn.Member
-                                    )
-                            | _ -> failwith "CANNOT REACH"
-                                )
+                    let members = makeSimpleMembers' attrs
                     yield
                         TypeNameNode.makeSimple(typName, attributes = [ "Erase" ])
                         |> TypeDefnRegularNode.make members
@@ -598,7 +181,7 @@ module Schema =
                                                         typ.Substring(0,1).ToUpper() + typ.Substring(1)
                                                     |> (+) "of"
                                                 let expr = fun (exprInfo: ExprInfo) ->
-                                                    $"unbox( \"{attrName}\", {exprInfo.ParamName})"
+                                                    $"unbox(\"{attrName}\", {exprInfo.ParamName})"
                                                 BindingNode.make(functionName, typ, expr, returnType = propInterfaceName)
                                                 |> MemberDefn.Member
                                             | _ -> failwith "UNREACHABLE")
@@ -632,22 +215,7 @@ module Schema =
                                             )
                                         )
                                 ]
-                            | _ -> 
-                                TypeDefnRegularNode.make (
-                                    simpleAttrs
-                                    |> List.collect (function
-                                        | InterfaceAttributeTypes.Simple(attrName, typs) ->
-                                            typs
-                                            |> List.map (function
-                                                | InterfaceAttributeType.Simple typ ->
-                                                    BindingNode.makeSimple(attrName,typ, propInterfaceName)
-                                                | InterfaceAttributeType.Object typ ->
-                                                    BindingNode.makeObject(attrName, typ, propInterfaceName)
-                                                | _ -> failwith "UNREACHABLE"
-                                                >> MemberDefn.Member )
-                                        | _ -> failwith "UNREACHABLE"
-                                        )
-                                    )
+                            | _ -> TypeDefnRegularNode.make (makeSimpleMembers' simpleAttrs)
                         |> TypeDefn.Regular
                         |> ModuleDecl.TypeDefn
         ] |> fun decls ->
