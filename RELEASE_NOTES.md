@@ -13,7 +13,14 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.1...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.0...HEAD)
+
+### [0.2.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.1..._%28Generator%29_0.2.0) - (2025-10-02)
+
+#### <!-- 1 --> Added
+
+* Add ident `number` as shortcut to "float" & "int" by [@cabboose](https://github.com/cabboose) with [#3a0db](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/3a0db25f572eedcda22c54d1cf1c8a247557bbad)
+  
 
 ### [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.0..._%28Generator%29_0.1.1) - (2025-10-02)
 
