@@ -13,7 +13,14 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.3.0...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.4.0...HEAD)
+
+### [0.4.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.3.0..._%28Generator%29_0.4.0) - (2025-10-02)
+
+#### <!-- 1 --> Added
+
+* add 'object' function for attribute types by [@cabboose](https://github.com/cabboose) with [#84c96](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/84c96f9a89df4590830df5986cfaf9b485357fb0)
+  
 
 ### [0.3.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.2..._%28Generator%29_0.3.0) - (2025-10-02)
 
