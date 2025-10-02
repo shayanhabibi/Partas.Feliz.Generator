@@ -38,6 +38,8 @@ let tests =
         testList "Schema Build" [
             test "Reserved identifiers" {
                 let schema = {
+                    Namespace = None
+                    RequiredOpens = []
                     RootTypeName = None
                     Interfaces = [
                         makeType "Test" [
@@ -53,6 +55,59 @@ let tests =
 type Test =
     static member inline test(value: float) : ITestProp = unbox("test", value)
     static member inline use'(value: int) : ITestProp = unbox("use", value)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
+            test "Namespace" {
+                let schema = {
+                    Namespace = Some "Test.Namespace"
+                    RequiredOpens = []
+                    RootTypeName = None
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" =>> nameof float
+                        ]
+                    ]
+                }
+                let expected = """namespace Test.Namespace
+
+type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(value: float) : ITestProp = unbox("test", value)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
+            
+            test "Namespace and Opens" {
+                let schema = {
+                    Namespace = Some "Test.Namespace"
+                    RequiredOpens = [
+                        "Fable.Core"
+                    ]
+                    RootTypeName = None
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" =>> nameof float
+                        ]
+                    ]
+                }
+                let expected = """namespace Test.Namespace
+
+open Fable.Core
+
+type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(value: float) : ITestProp = unbox("test", value)"""
                 schema
                 |> Schema.build
                 |> _.Trim()

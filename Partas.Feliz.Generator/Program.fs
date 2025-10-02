@@ -413,6 +413,8 @@ type InterfaceType with
     member this.Attributes = this |> InterfaceType.attrs
     member this.TypeName = this |> InterfaceType.typeName
 type Schema = {
+    Namespace: string option
+    RequiredOpens: string list
     RootTypeName: string option
     Interfaces: InterfaceType list
 }
@@ -494,6 +496,20 @@ module Schema =
             >> TypeDefn.Regular
             >> ModuleDecl.TypeDefn
         [
+            match schema with
+            | { RequiredOpens = [] } ->
+                ()
+            | { RequiredOpens = opens } ->
+                yield
+                    opens
+                    |> List.map (
+                        IdentListNode.make
+                        >> fun opener ->
+                            OpenModuleOrNamespaceNode(opener, Range.Zero)
+                        >> Open.ModuleOrNamespace
+                        )
+                    |> OpenListNode
+                    |> ModuleDecl.OpenList
             match schema with
             | { RootTypeName = Some name } ->
                 yield makePropInterfaceType name
@@ -599,7 +615,23 @@ module Schema =
                         |> TypeDefn.Regular
                         |> ModuleDecl.TypeDefn
         ] |> fun decls ->
-        Oak([], [ ModuleOrNamespaceNode(None, decls, Range.Zero) ], Range.Zero)
+        Oak([], [
+            match schema with
+            | { Namespace = Some value } ->
+                ModuleOrNamespaceHeaderNode(
+                    None,
+                    None,
+                    MultipleTextsNode.make "namespace",
+                    None,
+                    false,
+                    Some(IdentListNode.make value),
+                    Range.Zero
+                    )
+                |> Some
+            | _ -> None
+            |> fun header ->
+                ModuleOrNamespaceNode(header, decls, Range.Zero)
+        ], Range.Zero)
         |> CodeFormatter.FormatOakAsync
         |> Async.RunSynchronously
         |> sprintf "%s"
