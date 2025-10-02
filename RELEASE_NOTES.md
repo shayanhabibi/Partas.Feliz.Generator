@@ -13,7 +13,18 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-No commits at this time.
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.1...HEAD)
+
+### [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.0..._%28Generator%29_0.1.1) - (2025-10-02)
+
+#### <!-- 2 --> Fixed
+
+* Add 'use' to the reserved name list by [@cabboose](https://github.com/cabboose) with [#ddb9e](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/ddb9e65a9e69452dcc24f33f4c012354c8085682)
+  
+
+<div align="right"><a href="#quick-navigation">(back to top)</a></div>
+
+-----------------------
 
 
 ---
