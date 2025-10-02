@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <PackageId>Partas.Feliz.Generator</PackageId>
+        <Title>Partas.Feliz.Generator</Title>
+        <RootNamespace>Partas.Feliz.Generator</RootNamespace>
+        <AssemblyName>Partas.Feliz.Generator</AssemblyName>
+        <Company>Partas</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>Partas;F#;Feliz;Generator;Fable;fable-javascript;Utility</PackageTags>
+        <Authors>Shayan Habibi</Authors>
+        <Copyright>Copyright (c) Shayan Habibi 2025</Copyright>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Version>0.1.0</Version>
+        <PackageVersion>0.1.0</PackageVersion>
+        <GitNetInitialVersion>0.1.0</GitNetInitialVersion>
+        <PackageIcon>Partas_d00b_00a icon.png</PackageIcon>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md">
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
+            <Link>Assets\README.md</Link>
+        </None>
+        <None Include="..\public\Partas_d00b_00a icon.png">
+            <Pack>true</Pack>
+            <Packagepath>\</Packagepath>
+            <Link>Assets\icon.png</Link>
+        </None>
+        <Compile Include="Program.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Fantomas.Core" Version="7.0.3" />
+      <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    </ItemGroup>
+
+</Project>
