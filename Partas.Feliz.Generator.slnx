@@ -1,0 +1,11 @@
+﻿<Solution>
+  <Folder Name="/build/">
+    <Project Path="Build.fsproj" Type="Classic F#" />
+  </Folder>
+  <Folder Name="/misc/">
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="Partas.Feliz.Generator\Partas.Feliz.Generator.fsproj" Type="Classic F#" />
+  </Folder>
+</Solution>
