@@ -16,7 +16,7 @@ let tests =
                 ]
                 |> Flip.Expect.allEqual
                        ""
-                       (InterfaceAttributeTypes.Simple("test", [ "float"; "int" ]))
+                       (InterfaceAttributeTypes.Simple("test", [ InterfaceAttributeType.Simple "float"; InterfaceAttributeType.Simple "int" ]))
             }
             test "numberArray macro" {
                 [
@@ -25,7 +25,7 @@ let tests =
                 ]
                 |> Flip.Expect.allEqual
                     ""
-                    (InterfaceAttributeTypes.Simple("test", [ "float array"; "int array" ]))
+                    (InterfaceAttributeTypes.Simple("test", [ InterfaceAttributeType.Simple "float array"; InterfaceAttributeType.Simple "int array" ]))
             }
             test "Reserved Identifiers in expressions" {
                 Expr.make "use"
@@ -113,5 +113,27 @@ type Test =
                 |> _.Trim()
                 |> Flip.Expect.equal "" expected
             }
+            test "Object Types" {
+                let schema = {
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    RootTypeName = None
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" =>> object "Param"
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(props: IParamProp list) : ITestProp = unbox("test", createObj (unbox props))"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }           
         ]
     ]

@@ -11,14 +11,41 @@ open YamlDotNet.Serialization
 open YamlDotNet.Serialization.NamingConventions
 
 [<AutoOpen>]
+module Constants =
+    [<Literal>]
+    let number = "%MACRO%number"
+    [<Literal>]
+    let internal OBJECT = "%MACRO%createObj "
+    let object = (+) OBJECT
+    [<Literal>]
+    let numberArray = "%MACRO%number array"
+    [<Literal>]
+    let internal NUMBER = number
+    [<Literal>]
+    let internal NUMBER_ARRAY = numberArray
+[<AutoOpen>]
 module Scaffold =
-    // Attributable to Shmew - taken from Feliz.Generator.MaterialUI/Common.fs
-    let appendApostropheToReservedKeywords =
+    let mangleReservedKeywords =
       let reserved =
         [
-          "checked"; "static"; "fixed"; "inline"; "default"; "component";
-          "inherit"; "open"; "type"; "true"; "false"; "in"; "end"; "global"
-          "use"
+          "abstract"; "and"; "as"; "assert"; "base"; "begin"; "class"; "default"
+          "delegate"; "do"; "done"; "downcast"; "downto"; "elif"; "else"
+          "end"; "exception"; "extern"; "false"; "finally"; "fixed"
+          "fun"; "function"; "global"; "if"; "in"; "inherit"; "inline"
+          "interface"; "internal"; "lazy"; "let"; "match"; "member"
+          "module"; "mutable"; "namespace"; "new"; "null"; "of"; "open"
+          "or"; "override"; "private"; "public"; "rec"; "return"
+          "static"; "struct"; "then"; "to"; "true"; "try"; "type"
+          "upcast"; "use"; "val"; "void"; "when"; "while" ;"with"; "yield"
+          "const"
+          // not actually reserved, but better not to obfuscate
+          "not"; "select"
+          // reserved because they are keywords in OCaml
+          "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "sig"
+          // reserved for future expansion
+          "break"; "checked"; "component"; "constraint"; "continue"; "event"
+          "external"; "include"; "mixin"; "parallel"; "process"; "protected"
+          "pure"; "sealed"; "tailcall"; "trait"; "virtual"
         ]
         |> Set.ofList
       fun s -> if reserved.Contains s then s + "'" else s
@@ -242,7 +269,7 @@ module Scaffold =
             ?attributes: string list,
             ?suffix: string
             ) =
-            let identifier = appendApostropheToReservedKeywords identifier
+            let identifier = mangleReservedKeywords identifier
             TypeNameNode(
                 docs |> Option.map XmlDocNode.make,
                 attributes |> Option.map MultipleAttributeListNode.make,
@@ -309,7 +336,7 @@ module Scaffold =
                 | _ -> $"unbox \"{functionName}\""
                 |> SingleTextNode.make
                 |> Expr.Ident
-            let functionName = appendApostropheToReservedKeywords functionName
+            let functionName = mangleReservedKeywords functionName
             BindingNode(
                 xmlDoc = None,
                 attributes = None,
@@ -325,7 +352,7 @@ module Scaffold =
                 expr = expr,
                 range = Range.Zero
                 )
-        static member make (functionName, paramType: string, expr: ExprInfo -> string, ?returnType: string ,?paramName, ?isInline: bool, ?isStatic: bool) =
+        static member make (functionName, paramType: string, expr: ExprInfo -> string, ?returnType: string, ?paramName, ?isInline: bool, ?isStatic: bool) =
             let isStatic = defaultArg isStatic true
             let isInline = defaultArg isInline true
             let paramName = defaultArg paramName "value"
@@ -334,7 +361,7 @@ module Scaffold =
                     MultipleTextsNode.make [ "static"; "member" ]
                 else
                     MultipleTextsNode.make [ "member" ]
-            let normalizedFunctionName = appendApostropheToReservedKeywords functionName
+            let normalizedFunctionName = mangleReservedKeywords functionName
             BindingNode(
                 xmlDoc = None,
                 attributes = None,
@@ -359,12 +386,13 @@ module Scaffold =
         static member makeSimple (functionName, paramType, ?returnType: string) =
             let expr = fun paramName -> $"unbox(\"{paramName.FunctionName}\", {paramName.ParamName})"
             BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
-        static member makeObject (functionName, paramType) =
+        static member makeObject (functionName, paramType: string, ?returnType: string) =
             let expr = fun paramName -> $"unbox(\"{paramName.FunctionName}\", createObj (unbox {paramName.ParamName}))"
-            BindingNode.make(functionName, paramType, expr)
+            let paramType = $"I{paramType}Prop list"
+            BindingNode.make(functionName, paramType, expr, ?returnType = returnType, paramName = "props")
     type NestedModuleNode with
         static member make (name: string) decls =
-            let name = appendApostropheToReservedKeywords name
+            let name = mangleReservedKeywords name
             NestedModuleNode(
                 xmlDoc = None,
                 attributes = Some(MultipleAttributeListNode.make "Erase"),
@@ -386,8 +414,9 @@ module Scaffold =
 type InterfaceAttributeType =
     | Simple of string
     | Enum of string list
+    | Object of string
 type InterfaceAttributeTypes =
-    | Simple of attrName: string * types: string list
+    | Simple of attrName: string * types: InterfaceAttributeType list
     | Mixed of attrName: string * types: InterfaceAttributeType list
     | Enum of attrName: string * types: string list
 [<RequireQualifiedAccess>]
@@ -421,14 +450,7 @@ type Schema = {
 
 [<AutoOpen>]
 module Operators =
-    [<Literal>]
-    let number = "%MACRO%number"
-    [<Literal>]
-    let numberArray = "%MACRO%number array"
-    [<Literal>]
-    let private NUMBER = number
-    [<Literal>]
-    let private NUMBER_ARRAY = numberArray
+
     let (==>) (x: string) (typs: obj list) =
         let mutable hasSimple: bool = false
         let mutable hasEnums: bool = false
@@ -453,18 +475,13 @@ module Operators =
                         InterfaceAttributeType.Simple "float array"
                         InterfaceAttributeType.Simple "int array"
                     ]
+                | InterfaceAttributeType.Simple text when text.StartsWith(OBJECT) ->
+                    [ InterfaceAttributeType.Object (text.Substring(OBJECT.Length)) ]
                 | normTyp -> [ normTyp ])
         match hasSimple,hasEnums with
         | true, true ->
             InterfaceAttributeTypes.Mixed(x, mappedTypes)
         | true, _ ->
-            let mappedTypes =
-                typs
-                |> List.collect (function
-                    | :? string as s when s = number -> [ "float"; "int" ]
-                    | :? string as s when s = numberArray -> [ "float array"; "int array" ]
-                    | :? string as s -> [s]
-                    | _ -> failwith "UNREACHABLE")
             InterfaceAttributeTypes.Simple(x, mappedTypes)
         | _, true ->
             let mappedTypes =
@@ -476,9 +493,20 @@ module Operators =
         | _ -> InterfaceAttributeTypes.Simple(x, [])
     let (=>>) (x: string) (value: string) =
         match value with
-        | NUMBER -> InterfaceAttributeTypes.Simple(x, [ "float"; "int" ])
-        | NUMBER_ARRAY -> InterfaceAttributeTypes.Simple(x, [ "float array"; "int array" ])
-        | _ -> InterfaceAttributeTypes.Simple(x, [ value ])
+        | NUMBER ->
+            InterfaceAttributeTypes.Simple(x, [
+                InterfaceAttributeType.Simple "float"
+                InterfaceAttributeType.Simple "int"
+            ])
+        | NUMBER_ARRAY -> InterfaceAttributeTypes.Simple(x, [
+            InterfaceAttributeType.Simple "float array"
+            InterfaceAttributeType.Simple "int array"
+            ])
+        | text when text.StartsWith(OBJECT) ->
+            InterfaceAttributeTypes.Simple(x, [
+                InterfaceAttributeType.Object (text.Substring(OBJECT.Length))
+            ])
+        | _ -> InterfaceAttributeTypes.Simple(x, [ InterfaceAttributeType.Simple value ])
     let inline makeType text (attrs: InterfaceAttributeTypes list) = InterfaceType.create text attrs
 
 module Schema =
@@ -524,9 +552,13 @@ module Schema =
                         |> List.collect (function
                             | InterfaceAttributeTypes.Simple(attrName, typs) ->
                                 typs
-                                |> List.map(fun typ ->
-                                    BindingNode.makeSimple(attrName, typ, propInterfaceName)
-                                    |> MemberDefn.Member
+                                |> List.map(function
+                                    | InterfaceAttributeType.Simple typ ->
+                                        BindingNode.makeSimple(attrName, typ, propInterfaceName)
+                                    | InterfaceAttributeType.Object typ ->
+                                        BindingNode.makeObject(attrName, typ, propInterfaceName)
+                                    | _ -> failwith "UNREACHABLE"
+                                    >> MemberDefn.Member
                                     )
                             | _ -> failwith "CANNOT REACH"
                                 )
@@ -552,7 +584,7 @@ module Schema =
                                     )
                             | InterfaceAttributeTypes.Mixed(attrName, complexTyps) ->
                                 let simple, enums =
-                                    complexTyps |> List.partition _.IsSimple
+                                    complexTyps |> List.partition (_.IsEnum >> not)
                                 TypeNameNode.makeSimple(attrName, attributes = [ "Erase" ])
                                 |> TypeDefnRegularNode.make [
                                     yield!
@@ -606,9 +638,13 @@ module Schema =
                                     |> List.collect (function
                                         | InterfaceAttributeTypes.Simple(attrName, typs) ->
                                             typs
-                                            |> List.map (fun typ ->
-                                                BindingNode.makeSimple(attrName,typ, propInterfaceName)
-                                                |> MemberDefn.Member )
+                                            |> List.map (function
+                                                | InterfaceAttributeType.Simple typ ->
+                                                    BindingNode.makeSimple(attrName,typ, propInterfaceName)
+                                                | InterfaceAttributeType.Object typ ->
+                                                    BindingNode.makeObject(attrName, typ, propInterfaceName)
+                                                | _ -> failwith "UNREACHABLE"
+                                                >> MemberDefn.Member )
                                         | _ -> failwith "UNREACHABLE"
                                         )
                                     )
