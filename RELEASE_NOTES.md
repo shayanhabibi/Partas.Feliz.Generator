@@ -9,14 +9,6 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 ---
 
 
-#### Quick Navigation
-
-**Scope** | Current Release | Commit Count
-:--- | :---: | :---:
-[**Generator**](#generator) | [0.3.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.2..._%28Generator%29_0.3.0) | 5 commits
-[**Tests**](#tests) | [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.0..._%28Tests%29_0.1.1) | 3 commits
-
-
 -----------------------
 
 # Generator
@@ -56,29 +48,6 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 #### <!-- 2 --> Fixed
 
 * Add 'use' to the reserved name list by [@cabboose](https://github.com/cabboose) with [#ddb9e](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/ddb9e65a9e69452dcc24f33f4c012354c8085682)
-  
-
-<div align="right"><a href="#quick-navigation">(back to top)</a></div>
-
------------------------
-
-# Tests
-
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.1...HEAD)
-
-* namespace field and requiredopens field for header namespace and following required modules to open by [@cabboose](https://github.com/cabboose) with [#5cba4](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/5cba45d1261f57e4366bb24a751d4252c8414b1d)
-  
-
-### [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.0..._%28Tests%29_0.1.1) - (2025-10-02)
-
-#### <!-- 2 --> Fixed
-
-* fix name of attribute being normalized in expr instead of just in method identifier by [@cabboose](https://github.com/cabboose) with [#6838a](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/6838ace165cb78fb504d16f2e5cff5d58b10b55a)
-  
-
-#### <!-- 6 --> Others
-
-* namespace field and requiredopens field for header namespace and following required modules to open by [@cabboose](https://github.com/cabboose) with [#5cba4](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/5cba45d1261f57e4366bb24a751d4252c8414b1d)
   
 
 <div align="right"><a href="#quick-navigation">(back to top)</a></div>
