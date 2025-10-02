@@ -13,7 +13,14 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.5.0...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.6.0...HEAD)
+
+### [0.6.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.5.0..._%28Generator%29_0.6.0) - (2025-10-02)
+
+#### <!-- 1 --> Added
+
+* new macro funcs by [@cabboose](https://github.com/cabboose) with [#d6fee](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/d6feed10b01350e9b73a500e790b24b3875f43de)
+  
 
 ### [0.5.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.4.0..._%28Generator%29_0.5.0) - (2025-10-02)
 
