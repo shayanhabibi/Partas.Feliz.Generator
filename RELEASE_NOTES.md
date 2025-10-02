@@ -13,7 +13,14 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.0...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.1...HEAD)
+
+### [0.2.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.0..._%28Generator%29_0.2.1) - (2025-10-02)
+
+#### <!-- 2 --> Fixed
+
+* Also add identifier `numberArray` as shortcut to 'float array' and 'int array' by [@cabboose](https://github.com/cabboose) with [#a2add](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/a2adda17daf404059b74825034f2da87ecc3d6ae)
+  
 
 ### [0.2.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.1.1..._%28Generator%29_0.2.0) - (2025-10-02)
 
