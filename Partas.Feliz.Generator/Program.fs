@@ -422,7 +422,11 @@ module Operators =
     [<Literal>]
     let number = "%MACRO%number"
     [<Literal>]
+    let numberArray = "%MACRO%number array"
+    [<Literal>]
     let private NUMBER = number
+    [<Literal>]
+    let private NUMBER_ARRAY = numberArray
     let (==>) (x: string) (typs: obj list) =
         let mutable hasSimple: bool = false
         let mutable hasEnums: bool = false
@@ -441,6 +445,11 @@ module Operators =
                     [
                         InterfaceAttributeType.Simple "float"
                         InterfaceAttributeType.Simple "int"
+                    ]
+                | InterfaceAttributeType.Simple NUMBER_ARRAY ->
+                    [
+                        InterfaceAttributeType.Simple "float array"
+                        InterfaceAttributeType.Simple "int array"
                     ]
                 | normTyp -> [ normTyp ])
         match hasSimple,hasEnums with
@@ -464,6 +473,7 @@ module Operators =
     let (=>>) (x: string) (value: string) =
         match value with
         | NUMBER -> InterfaceAttributeTypes.Simple(x, [ "float"; "int" ])
+        | NUMBER_ARRAY -> InterfaceAttributeTypes.Simple(x, [ "float array"; "int array" ])
         | _ -> InterfaceAttributeTypes.Simple(x, [ value ])
     let inline makeType text (attrs: InterfaceAttributeTypes list) = InterfaceType.create text attrs
 
