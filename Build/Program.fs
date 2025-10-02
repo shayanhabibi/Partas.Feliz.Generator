@@ -137,6 +137,19 @@ Target.create Ops.Publish <| fun args ->
                         .ApiKey = Args.apiKey
             }))
 
+open Fake.DotNet.Testing
+
+Target.create Test <| fun args ->
+    !!"**/bin/**/*.Tests.dll"
+    |> Expecto.run (fun p ->
+        {
+            p with
+                Summary = true
+                CustomArgs =
+                    [ "--colours 256" ]
+                    @ p.CustomArgs
+        })
+    
 open Fake.Core.TargetOperators
 
 let dependenciesMapping = [
@@ -144,6 +157,7 @@ let dependenciesMapping = [
     ==> Clean
     ==> GitNet
     ==> Build
+    ==> Test
     ==> Pack
     ==> GitPush
     ==> Publish

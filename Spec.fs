@@ -21,6 +21,8 @@ module Ops =
     let GitPush = "GitPush"
     [<Literal>]
     let Publish = "Publish"
+    [<Literal>]
+    let Test = "Test"
 
 module Args =
     let mutable local: bool = false

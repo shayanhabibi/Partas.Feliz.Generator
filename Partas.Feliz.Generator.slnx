@@ -4,9 +4,12 @@
   </Folder>
   <Folder Name="/misc/">
     <File Path="README.md" />
-    <File Path="RELEASE_NOTES.md"/>
+    <File Path="RELEASE_NOTES.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="Partas.Feliz.Generator\Partas.Feliz.Generator.fsproj" Type="Classic F#" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Partas.Feliz.Generator.Tests\Partas.Feliz.Generator.Tests.fsproj" Type="Classic F#" />
   </Folder>
 </Solution>

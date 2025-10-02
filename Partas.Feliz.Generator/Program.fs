@@ -334,7 +334,7 @@ module Scaffold =
                     MultipleTextsNode.make [ "static"; "member" ]
                 else
                     MultipleTextsNode.make [ "member" ]
-            let functionName = appendApostropheToReservedKeywords functionName
+            let normalizedFunctionName = appendApostropheToReservedKeywords functionName
             BindingNode(
                 xmlDoc = None,
                 attributes = None,
@@ -342,7 +342,7 @@ module Scaffold =
                 isMutable = false,
                 inlineNode = (if isInline then SingleTextNode.make "inline" |> Some else None),
                 accessibility = None,
-                functionName =  Choice1Of2 (IdentListNode.make functionName),
+                functionName =  Choice1Of2 (IdentListNode.make normalizedFunctionName),
                 genericTypeParameters = None,
                 parameters = [
                     (SingleTextNode.make paramName, SingleTextNode.make paramType |> Type.Anon |> Some)
@@ -458,8 +458,10 @@ module Operators =
         | true, _ ->
             let mappedTypes =
                 typs
-                |> List.map (function
-                    | :? string as s -> s
+                |> List.collect (function
+                    | :? string as s when s = number -> [ "float"; "int" ]
+                    | :? string as s when s = numberArray -> [ "float array"; "int array" ]
+                    | :? string as s -> [s]
                     | _ -> failwith "UNREACHABLE")
             InterfaceAttributeTypes.Simple(x, mappedTypes)
         | _, true ->
@@ -513,7 +515,7 @@ module Schema =
                             | _ -> failwith "CANNOT REACH"
                                 )
                     yield
-                        TypeNameNode.makeSimple typName
+                        TypeNameNode.makeSimple(typName, attributes = [ "Erase" ])
                         |> TypeDefnRegularNode.make members
                         |> TypeDefn.Regular
                         |> ModuleDecl.TypeDefn
