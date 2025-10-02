@@ -13,17 +13,7 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### UNRELEASED
-
-* ci build by [@cabboose](https://github.com/cabboose) with [#63ade](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/63adea073eb84dd1da2b9718e79dd2fa353ebfaf)
-  
-
-* init by [@cabboose](https://github.com/cabboose) with [#be1c7](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/be1c7cca78234cc29e914598135c48e55fb4c6a5)
-  
-
-<div align="right"><a href="#quick-navigation">(back to top)</a></div>
-
------------------------
+No commits at this time.
 
 
 ---
