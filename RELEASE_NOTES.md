@@ -13,15 +13,22 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 **Scope** | Current Release | Commit Count
 :--- | :---: | :---:
-[**Generator**](#generator) | [0.2.2](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.1..._%28Generator%29_0.2.2) | 4 commits
-[**Tests**](#tests) | [0.1.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/b57faa3aab0ec9bb238e2b379cba6a135b9a5452) | 1 commits
+[**Generator**](#generator) | [0.3.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.2..._%28Generator%29_0.3.0) | 5 commits
+[**Tests**](#tests) | [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.0..._%28Tests%29_0.1.1) | 3 commits
 
 
 -----------------------
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.2...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.3.0...HEAD)
+
+### [0.3.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.2..._%28Generator%29_0.3.0) - (2025-10-02)
+
+#### <!-- 6 --> Others
+
+* namespace field and requiredopens field for header namespace and following required modules to open by [@cabboose](https://github.com/cabboose) with [#5cba4](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/5cba45d1261f57e4366bb24a751d4252c8414b1d)
+  
 
 ### [0.2.2](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.2.1..._%28Generator%29_0.2.2) - (2025-10-02)
 
@@ -57,9 +64,21 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Tests
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.0...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.1...HEAD)
+
+* namespace field and requiredopens field for header namespace and following required modules to open by [@cabboose](https://github.com/cabboose) with [#5cba4](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/5cba45d1261f57e4366bb24a751d4252c8414b1d)
+  
+
+### [0.1.1](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Tests%29_0.1.0..._%28Tests%29_0.1.1) - (2025-10-02)
+
+#### <!-- 2 --> Fixed
 
 * fix name of attribute being normalized in expr instead of just in method identifier by [@cabboose](https://github.com/cabboose) with [#6838a](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/6838ace165cb78fb504d16f2e5cff5d58b10b55a)
+  
+
+#### <!-- 6 --> Others
+
+* namespace field and requiredopens field for header namespace and following required modules to open by [@cabboose](https://github.com/cabboose) with [#5cba4](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/5cba45d1261f57e4366bb24a751d4252c8414b1d)
   
 
 <div align="right"><a href="#quick-navigation">(back to top)</a></div>
