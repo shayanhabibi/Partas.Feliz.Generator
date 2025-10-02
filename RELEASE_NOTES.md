@@ -13,7 +13,14 @@ which includes [Scopes and Epochs](#epoch-scoped-semver).
 
 # Generator
 
-### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.4.0...HEAD)
+### [UNRELEASED](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.5.0...HEAD)
+
+### [0.5.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.4.0..._%28Generator%29_0.5.0) - (2025-10-02)
+
+#### <!-- 1 --> Added
+
+* supports number and boolean enums. more config options by [@cabboose](https://github.com/cabboose) with [#bd29f](https://github.com/shayanhabibi/Partas.Feliz.Generator/commit/bd29fa751518703682aead04d04d9de3a9a3e6df)
+  
 
 ### [0.4.0](https://github.com/shayanhabibi/Partas.Feliz.Generator/compare/_%28Generator%29_0.3.0..._%28Generator%29_0.4.0) - (2025-10-02)
 

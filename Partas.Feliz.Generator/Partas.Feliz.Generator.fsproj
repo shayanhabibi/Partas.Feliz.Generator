@@ -14,8 +14,8 @@
         <Authors>Shayan Habibi</Authors>
         <Copyright>Copyright (c) Shayan Habibi 2025</Copyright>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <Version>0.4.0</Version>
-        <PackageVersion>0.4.0</PackageVersion>
+        <Version>0.5.0</Version>
+        <PackageVersion>0.5.0</PackageVersion>
         <GitNetInitialVersion>0.1.0</GitNetInitialVersion>
         <PackageIcon>Partas_d00b_00a icon.png</PackageIcon>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
