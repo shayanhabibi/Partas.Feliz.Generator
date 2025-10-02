@@ -419,6 +419,10 @@ type Schema = {
 
 [<AutoOpen>]
 module Operators =
+    [<Literal>]
+    let number = "%MACRO%number"
+    [<Literal>]
+    let private NUMBER = number
     let (==>) (x: string) (typs: obj list) =
         let mutable hasSimple: bool = false
         let mutable hasEnums: bool = false
@@ -432,6 +436,13 @@ module Operators =
                     hasEnums <- true
                     InterfaceAttributeType.Enum s
                 | t -> failwith $"Unhandled AttributeType: {t.GetType()} \n Value: {t}")
+            |> List.collect (function
+                | InterfaceAttributeType.Simple NUMBER ->
+                    [
+                        InterfaceAttributeType.Simple "float"
+                        InterfaceAttributeType.Simple "int"
+                    ]
+                | normTyp -> [ normTyp ])
         match hasSimple,hasEnums with
         | true, true ->
             InterfaceAttributeTypes.Mixed(x, mappedTypes)
@@ -450,8 +461,10 @@ module Operators =
                     | _ -> failwith "UNREACHABLE")
             InterfaceAttributeTypes.Enum(x, List.collect id mappedTypes)
         | _ -> InterfaceAttributeTypes.Simple(x, [])
-    let inline (=>>) (x: string) (value: string) =
-        InterfaceAttributeTypes.Simple(x, [ value ])
+    let (=>>) (x: string) (value: string) =
+        match value with
+        | NUMBER -> InterfaceAttributeTypes.Simple(x, [ "float"; "int" ])
+        | _ -> InterfaceAttributeTypes.Simple(x, [ value ])
     let inline makeType text (attrs: InterfaceAttributeTypes list) = InterfaceType.create text attrs
 
 module Schema =
