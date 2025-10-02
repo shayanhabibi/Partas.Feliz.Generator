@@ -584,28 +584,3 @@ module Schema =
                 File.WriteAllText(filePath, contents)
             else
                 failwith $"Cannot write to a filePath without an extension (as it may have been a mistake): %s{filePath}"
-
-module Program =
-    [<EntryPoint>]
-    let main _ =
-        {
-            RootTypeName = None
-            Interfaces = [
-                makeType "SomeType" [
-                    "attr" ==> [
-                        nameof float
-                        nameof int
-                        [
-                            "x"
-                            "y"
-                        ]
-                    ]
-                    "otherAttr" ==> [
-                        nameof string
-                    ]
-                ]
-            ]
-        } |> Schema.build
-        |> printfn "%s"
-        0
-    
