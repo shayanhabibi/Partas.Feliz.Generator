@@ -22,6 +22,10 @@ type InterfaceAttributeType =
     | Simple of string
     | Enum of InterfaceAttributeEnumType list
     | Object of string
+    | NestedObject of string
+    | Funcify of string
+    | ListToSeq of string
+    | ListToArray of string
     
 type InterfaceAttributeTypes =
     | Simple of attrName: string * types: InterfaceAttributeType list

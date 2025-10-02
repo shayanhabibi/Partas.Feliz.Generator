@@ -1,5 +1,8 @@
 ﻿module Partas.Feliz.Generator.Fantomas
 // Fantomas extensions
+open Str
+open System
+open FSharp.Core
 open System.Collections.Generic
 open System.IO
 open FSharp.Core
@@ -10,6 +13,7 @@ open Fantomas.Core.SyntaxOak
 open Types
 open Utils
 open Spec
+
 
 
 type SingleTextNode with
@@ -385,6 +389,31 @@ type BindingNode with
         let expr = fun paramName -> $"unbox(\"{paramName.PropertyName}\", createObj (unbox {paramName.ParamName}))"
         let paramType = $"I{paramType}Prop list"
         BindingNode.make(functionName, paramType, expr, ?returnType = returnType, paramName = "props")
+    static member makeNested (functionName, paramType: string, ?returnType: string) =
+        let expr = fun paramName ->
+            $"""unbox("{paramName.PropertyName}", {paramName.ParamName} |> List.map (unbox<(string * obj) list> >> createObj) |> List.toArray)"""
+        let paramType = $"I{paramType}Prop list list"
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType, paramName = "propsList")
+    static member makeListToArray (functionName, paramType: string, ?returnType: string) =
+        let expr = fun paramName ->
+            $"""unbox("{paramName.PropertyName}", {paramName.ParamName} |> List.toArray)"""
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
+    static member makeListToSeq (functionName, paramType: string, ?returnType: string) =
+        let expr = fun paramName ->
+            $"""unbox("{paramName.PropertyName}", {paramName.ParamName} |> List.toSeq)"""
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
+    static member makeFunc (functionName, paramType: string, ?returnType: string) =
+        let curryCount = paramType.Split("->").Length
+        let funcifier =
+            [
+                "System.Func<"
+                List.replicate curryCount "_"
+                |> String.concat ","
+                ">"
+            ] |> String.concat ""
+        let expr = fun paramName ->
+            $"""unbox("{paramName.PropertyName}", {funcifier} {paramName.ParamName})"""
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
 type NestedModuleNode with
     static member make (name: string) decls =
         let name = mangleReservedKeywords name

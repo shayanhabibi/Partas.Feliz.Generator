@@ -171,6 +171,85 @@ type Test =
                 |> Schema.build
                 |> _.Trim()
                 |> Flip.Expect.equal "" expected
-            }           
+            }
+            test "List Types" {
+                let schema = {
+                    Config = Config.Default
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" ==> [
+                                listToArray "Param list"
+                                listToSeq "Prop list"
+                            ] 
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(value: Param list) : ITestProp = unbox("test", value |> List.toArray)
+    static member inline test(value: Prop list) : ITestProp = unbox("test", value |> List.toSeq)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
+
+            test "NestedObject Types" {
+                let schema = {
+                    Config = Config.Default
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" ==> [
+                                nestedObject "Duration"
+                            ] 
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(propsList: IDurationProp list list) : ITestProp =
+        unbox("test", propsList |> List.map (unbox<(string * obj) list> >> createObj) |> List.toArray)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
+
+            test "Func Types" {
+                let schema = {
+                    Config = Config.Default
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" ==> [
+                                func "Duration -> unit"
+                                func "Drop -> Top -> Drip"
+                            ] 
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(value: Duration -> unit) : ITestProp = unbox("test", System.Func<_,_> value)
+    static member inline test(value: Drop -> Top -> Drip) : ITestProp = unbox("test", System.Func<_,_,_> value)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
         ]
     ]

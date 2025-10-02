@@ -34,6 +34,14 @@ module internal Impl =
             [ InterfaceAttributeType.Simple "float array"; InterfaceAttributeType.Simple "int array" ]
         | InterfaceAttributeType.Simple typ when typ.StartsWith(OBJECT) ->
             [ InterfaceAttributeType.Object (typ.Substring(OBJECT.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(NESTED_OBJECT) ->
+            [ InterfaceAttributeType.NestedObject (typ.Substring(NESTED_OBJECT.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(FUNCIFY) ->
+            [ InterfaceAttributeType.Funcify (typ.Substring(FUNCIFY.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(LIST_SEQ_TRANSFORM) ->
+            [ InterfaceAttributeType.ListToSeq (typ.Substring(LIST_SEQ_TRANSFORM.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(LIST_ARRAY_TRANSFORM) ->
+            [ InterfaceAttributeType.ListToArray (typ.Substring(LIST_ARRAY_TRANSFORM.Length)) ]
         | typ -> [ typ ]
             )
         
@@ -51,6 +59,10 @@ module internal Impl =
         |> List.map(function
             | :? string as typ -> simple typ
             | :? (obj list) as typs -> enum typs
+            | :? (string list) as typs -> enum (typs |> List.map box)
+            | :? (bool list) as typs -> enum (typs |> List.map box)
+            | :? (float list) as typs -> enum (typs |> List.map box)
+            | :? (int list) as typs -> enum (typs |> List.map box)
             | typ -> failwith $"Unhandled type value {typ} of type {typ.GetType().FullName}"
             )
         |> fun mappedTypes ->
@@ -80,21 +92,10 @@ module Operators =
             InterfaceAttributeTypes.Enum(x, mappedTypes)
         | _ -> InterfaceAttributeTypes.Simple(x, [])
     let (=>>) (x: string) (value: string) =
-        match value with
-        | NUMBER ->
-            InterfaceAttributeTypes.Simple(x, [
-                InterfaceAttributeType.Simple "float"
-                InterfaceAttributeType.Simple "int"
-            ])
-        | NUMBER_ARRAY -> InterfaceAttributeTypes.Simple(x, [
-            InterfaceAttributeType.Simple "float array"
-            InterfaceAttributeType.Simple "int array"
-            ])
-        | text when text.StartsWith(OBJECT) ->
-            InterfaceAttributeTypes.Simple(x, [
-                InterfaceAttributeType.Object (text.Substring(OBJECT.Length))
-            ])
-        | _ -> InterfaceAttributeTypes.Simple(x, [ InterfaceAttributeType.Simple value ])
+        [ InterfaceAttributeType.Simple value ]
+        |> unshittifyMacros
+        |> fun attrTypes ->
+            InterfaceAttributeTypes.Simple(x, attrTypes)
     let inline makeType text (attrs: InterfaceAttributeTypes list) = InterfaceType.create text attrs
 
 module Schema =
@@ -132,6 +133,14 @@ module Schema =
                     BindingNode.makeSimple(attrName, typ, propInterfaceName)
                 | attrName, InterfaceAttributeType.Object typ ->
                     BindingNode.makeObject(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.NestedObject typ ->
+                    BindingNode.makeNested(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.ListToArray typ ->
+                    BindingNode.makeListToArray(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.ListToSeq typ ->
+                    BindingNode.makeListToSeq(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.Funcify typ ->
+                    BindingNode.makeFunc(attrName, typ, propInterfaceName)
                 | _ -> failwith "UNREACHABLE"
                 >> MemberDefn.Member
                 )

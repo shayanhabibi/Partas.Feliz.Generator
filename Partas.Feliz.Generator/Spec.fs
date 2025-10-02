@@ -34,6 +34,14 @@ module Constants =
     [<Literal>]
     let internal OBJECT = "%MACRO%createObj "
     [<Literal>]
+    let internal NESTED_OBJECT = "%MACRO%nestedObj "
+    [<Literal>]
+    let internal LIST_ARRAY_TRANSFORM = "%MACRO%list->array "
+    [<Literal>]
+    let internal LIST_SEQ_TRANSFORM = "%MACRO%list->seq "
+    [<Literal>]
+    let internal FUNCIFY = "%MACRO%Funcify "
+    [<Literal>]
     let numberArray = "%MACRO%number array"
     [<Literal>]
     let internal NUMBER = number
@@ -42,5 +50,9 @@ module Constants =
     [<Literal>]
     let internal XMLDOC = "%MACRO%xmlDoc "
     let object = (+) OBJECT
+    let nestedObject = (+) NESTED_OBJECT
+    let listToArray = (+) LIST_ARRAY_TRANSFORM
+    let listToSeq = (+) LIST_SEQ_TRANSFORM
+    let func = (+) FUNCIFY
     let doc = (+) XMLDOC
 
