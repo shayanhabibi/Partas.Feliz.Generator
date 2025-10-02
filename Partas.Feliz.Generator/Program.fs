@@ -18,6 +18,7 @@ module Scaffold =
         [
           "checked"; "static"; "fixed"; "inline"; "default"; "component";
           "inherit"; "open"; "type"; "true"; "false"; "in"; "end"; "global"
+          "use"
         ]
         |> Set.ofList
       fun s -> if reserved.Contains s then s + "'" else s
