@@ -20,6 +20,7 @@ let gitnetConfig =
                     ProjectFSharpConfig.init with
                         IgnoredProjects = [
                             "Build"
+                            "Partas.Feliz.Generator.Tests"
                         ]
                 }
                 |> Some
