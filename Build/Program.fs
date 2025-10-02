@@ -1,13 +1,14 @@
 module Build
 open Partas.GitNet
 open Spec.Ops
+open Spec
 
 Spec.initializeContext()
 
 let gitnetConfig =
     {
         GitNetConfig.initFSharp with
-            RepositoryPath = __SOURCE_DIRECTORY__
+            RepositoryPath = Files.Root.``.``
             Output.Ignore = Defaults.ignoreCommits @ [
                 IgnoreCommit.SkipCi
                 IgnoreCommit.Type "chore"
