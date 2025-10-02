@@ -21,14 +21,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\README.md">
-            <Pack>true</Pack>
-            <PackagePath>\</PackagePath>
+        <None Include="..\README.md" Pack="true" PackagePath="\">
             <Link>Assets\README.md</Link>
         </None>
-        <None Include="..\public\Partas_d00b_00a icon.png">
-            <Pack>true</Pack>
-            <Packagepath>\</Packagepath>
+        <None Include="..\public\Partas_d00b_00a icon.png" Pack="true" PackagePath="\">
             <Link>Assets\icon.png</Link>
         </None>
         <Compile Include="Program.fs"/>
