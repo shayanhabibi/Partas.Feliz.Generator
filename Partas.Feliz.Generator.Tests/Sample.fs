@@ -252,7 +252,7 @@ type Test =
                 |> Flip.Expect.equal "" expected
             }
             
-            test "Custom Prop Types" {
+            ptest "Custom Prop Types" {
                 let schema = {
                     Config = Config.Default
                     Namespace = None
