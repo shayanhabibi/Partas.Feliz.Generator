@@ -26,6 +26,9 @@ type InterfaceAttributeType =
     | Funcify of string
     | ListToSeq of string
     | ListToArray of string
+    | CustomProp of secondArgType: string
+    | CustomPropObject of secondArgType: string
+    | KeyStringValueObjects of string
     
 type InterfaceAttributeTypes =
     | Simple of attrName: string * types: InterfaceAttributeType list

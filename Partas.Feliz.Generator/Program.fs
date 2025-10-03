@@ -42,6 +42,12 @@ module internal Impl =
             [ InterfaceAttributeType.ListToSeq (typ.Substring(LIST_SEQ_TRANSFORM.Length)) ]
         | InterfaceAttributeType.Simple typ when typ.StartsWith(LIST_ARRAY_TRANSFORM) ->
             [ InterfaceAttributeType.ListToArray (typ.Substring(LIST_ARRAY_TRANSFORM.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(CUSTOM_PROP) ->
+            [ InterfaceAttributeType.CustomProp (typ.Substring(CUSTOM_PROP.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(CUSTOM_PROP_OBJECT) ->
+            [ InterfaceAttributeType.CustomPropObject (typ.Substring(CUSTOM_PROP_OBJECT.Length)) ]
+        | InterfaceAttributeType.Simple typ when typ.StartsWith(KEY_STRING_VALUE_OBJECTS) ->
+            [ InterfaceAttributeType.KeyStringValueObjects (typ.Substring(KEY_STRING_VALUE_OBJECTS.Length)) ]
         | typ -> [ typ ]
             )
         
@@ -141,6 +147,12 @@ module Schema =
                     BindingNode.makeListToSeq(attrName, typ, propInterfaceName)
                 | attrName, InterfaceAttributeType.Funcify typ ->
                     BindingNode.makeFunc(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.CustomProp typ ->
+                    BindingNode.makeCustomProp(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.CustomPropObject typ ->
+                    BindingNode.makeCustomPropObject(attrName, typ, propInterfaceName)
+                | attrName, InterfaceAttributeType.KeyStringValueObjects typ ->
+                    BindingNode.makeKeyValueObject(attrName, typ, propInterfaceName)
                 | _ -> failwith "UNREACHABLE"
                 >> MemberDefn.Member
                 )

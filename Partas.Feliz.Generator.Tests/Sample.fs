@@ -251,5 +251,32 @@ type Test =
                 |> _.Trim()
                 |> Flip.Expect.equal "" expected
             }
+            
+            test "Custom Prop Types" {
+                let schema = {
+                    Config = Config.Default
+                    Namespace = None
+                    RequiredOpens = [ ]
+                    Interfaces = [
+                        makeType "Test" [
+                            "test" ==> [
+                                customProp "int"
+                                customPropObj "Duration"
+                                keyStringValueObjects "Duration"
+                            ] 
+                        ]
+                    ]
+                }
+                let expected = """type ITestProp =
+    interface end
+
+[<Erase>]
+type Test =
+    static member inline test(key: string, value: int) : ITestProp = unbox(key, value)"""
+                schema
+                |> Schema.build
+                |> _.Trim()
+                |> Flip.Expect.equal "" expected
+            }
         ]
     ]

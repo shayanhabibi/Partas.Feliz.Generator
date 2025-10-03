@@ -49,10 +49,19 @@ module Constants =
     let internal NUMBER_ARRAY = numberArray
     [<Literal>]
     let internal XMLDOC = "%MACRO%xmlDoc "
+    [<Literal>]
+    let internal CUSTOM_PROP = "%MACRO%customProp "
+    [<Literal>]
+    let internal CUSTOM_PROP_OBJECT = "%MACRO%customPropObj "
+    [<Literal>]
+    let internal KEY_STRING_VALUE_OBJECTS = "%MACRO%keyStringValueObjects "
     let object = (+) OBJECT
     let nestedObject = (+) NESTED_OBJECT
     let listToArray = (+) LIST_ARRAY_TRANSFORM
     let listToSeq = (+) LIST_SEQ_TRANSFORM
     let func = (+) FUNCIFY
     let doc = (+) XMLDOC
+    let customProp = (+) CUSTOM_PROP
+    let customPropObj = (+) CUSTOM_PROP_OBJECT
+    let keyStringValueObjects = (+) KEY_STRING_VALUE_OBJECTS
 

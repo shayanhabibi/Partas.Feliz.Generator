@@ -288,6 +288,17 @@ type Expr with
     static member make text =
         SingleTextNode.make text
         |> Expr.Ident
+type Pattern with
+    static member makeParameterKeyValue parameterName parameterType =
+        (
+            SingleTextNode.make parameterName,
+            SingleTextNode.make parameterType
+            |> Type.Anon
+            |> Some
+        ) ||> PatParameterNode.make
+        |> Pattern.Parameter
+        |>PatParenNode.make
+        |> Pattern.Paren
 type BindingNode with
     static member internal make (
         functionName,
@@ -303,29 +314,38 @@ type BindingNode with
         ?xmlDoc,
         ?genericTypeParameters,
         ?propertyName,
-        ?expr
+        ?expr,
+        ?exprNode,
+        ?parameters,
+        ?isLet
         ) =
         let isStatic = defaultArg isStatic true
         let isInline = defaultArg isInline true
         let isMutable = defaultArg isMutable false
+        let isLet = defaultArg isLet false
         let shouldNormalizeFunctionName = defaultArg shouldNormalizeFunctionName true
         let leadingKeyword =
-            if isStatic
-            then MultipleTextsNode.make [ "static"; "member" ]
-            else MultipleTextsNode.make [ "member" ]
+            match isStatic,isLet with
+            | _ , true ->
+                MultipleTextsNode.make [ "let" ]
+            | true, false ->
+                MultipleTextsNode.make [ "static"; "member" ]
+            | false, false ->
+                MultipleTextsNode.make [ "member" ]
         let paramName = defaultArg paramName "value"
         let normalizedFunctionName =
             if shouldNormalizeFunctionName
             then mangleReservedKeywords functionName
             else functionName
         let propertyName = defaultArg propertyName functionName
-        let expr: string =
-            match expr,exprFn with
-            | Some expr, _ ->
-                expr
-            | _, Some exprFn ->
-                exprFn { ParamName = paramName; PropertyName = propertyName }
-            | _, _ ->
+        let expr =
+            match exprNode,expr,exprFn with
+            | Some expr, _, _ -> expr
+            | _,Some expr, _ ->
+                Expr.make expr
+            | _, _, Some exprFn ->
+                Expr.make <| exprFn { ParamName = paramName; PropertyName = propertyName }
+            | _, _, _ ->
                 failwith "BindingNode.make requires one of the two optional params to be set: `expr` or `exprFn`."
         BindingNode(
             xmlDoc = xmlDoc,
@@ -340,26 +360,18 @@ type BindingNode with
             accessibility = None,
             functionName = Choice1Of2(IdentListNode.make normalizedFunctionName),
             genericTypeParameters = genericTypeParameters,
-            parameters = [
+            parameters = (parameters |> Option.defaultValue [
                 match paramType with
                 | Some paramType ->
-                    (
-                        SingleTextNode.make paramName,
-                        SingleTextNode.make paramType
-                        |> Type.Anon
-                        |> Some
-                    ) ||> PatParameterNode.make
-                    |> Pattern.Parameter
-                    |> PatParenNode.make
-                    |> Pattern.Paren
+                    Pattern.makeParameterKeyValue paramName paramType
                 | _ -> ()
-            ],
+            ]),
             returnType = (
                 returnType
                 |> Option.map BindingReturnInfoNode.make
                 ),
             equals = SingleTextNode.make "=",
-            expr = Expr.make expr,
+            expr = expr,
             range = Range.Zero
             )
     static member makeEnum (enumType: InterfaceAttributeEnumType, ?attrName: string, ?returnType: string) =
@@ -414,6 +426,74 @@ type BindingNode with
         let expr = fun paramName ->
             $"""unbox("{paramName.PropertyName}", {funcifier} {paramName.ParamName})"""
         BindingNode.make(functionName, paramType, expr, ?returnType = returnType)
+    static member makeCustomProp(functionName, paramType: string, ?returnType: string) =
+        let parameters = [
+            Pattern.makeParameterKeyValue "key" "string"
+            Pattern.makeParameterKeyValue "value" paramType
+        ]
+        let expr = fun paramName ->
+            "unbox(key, value)"
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType, parameters = parameters)
+    static member makeCustomPropObject(functionName, paramType: string, ?returnType: string) =
+        let parameters = [
+            Pattern.makeParameterKeyValue "key" "string"
+            Pattern.makeParameterKeyValue "props" $"I{paramType}Prop list"
+        ]
+        let expr = fun _ -> "unbox(key, unbox<(string * obj) list> props |> createObj)"
+        BindingNode.make(functionName, paramType, expr, ?returnType = returnType, parameters = parameters)
+    static member makeKeyValueObject(functionName, paramType: string, ?returnType: string) =
+        let innerExpr =
+            ExprMatchNode(
+                SingleTextNode.make "match",
+                Expr.Ident (SingleTextNode.make "value"),
+                SingleTextNode.make "with",
+                [
+                    MatchClauseNode(
+                        Some(SingleTextNode.make "|"),
+                        Pattern.ArrayOrList(PatArrayOrListNode(
+                            SingleTextNode.make "[",
+                            [], SingleTextNode.make "]", Range.Zero
+                            )),
+                        None,
+                        SingleTextNode.make "->",
+                        Expr.Ident (SingleTextNode.make "unbox({| |})"),
+                        Range.Zero
+                        )
+                    MatchClauseNode(
+                        Some(SingleTextNode.make "|"),
+                        Pattern.LongIdent(PatLongIdentNode(None, IdentListNode.make "value", None, [], Range.Zero)) ,
+                        None,
+                        SingleTextNode.make "->",
+                        Expr.ArrayOrList(ExprArrayOrListNode(
+                            SingleTextNode.make "[",
+                            [
+                                ExprForEachNode(
+                                    SingleTextNode.make "for",
+                                    Pattern.Wild(SingleTextNode.make "(name, props)"),
+                                    Expr.Ident(SingleTextNode.make "value"),
+                                    false,
+                                    Expr.Ident(SingleTextNode.make "name, createObj (unbox props)"),
+                                    Range.Zero
+                                    ) |> Expr.ForEach
+                            ],
+                            SingleTextNode.make "] |> createObj |> unbox",
+                            Range.Zero
+                            )),
+                        Range.Zero
+                        )
+                ],
+                Range.Zero
+                )
+            |> Expr.Match
+        let expr =
+            ExprCompExprBodyNode([
+                ExprLetOrUseNode(BindingNode.make("matcher", isLet = true, isInline = false, exprNode = innerExpr), None, Range.Zero)
+                |> ComputationExpressionStatement.LetOrUseStatement
+                ComputationExpressionStatement.OtherStatement(Expr.Ident(SingleTextNode.make $"""unbox("{functionName}", matcher)"""))
+            ], Range.Zero)
+            |> Expr.CompExprBody
+        BindingNode.make(functionName, $"(string * I{paramType}Prop list) list", ?returnType = returnType, exprNode = expr)
+        
 type NestedModuleNode with
     static member make (name: string) decls =
         let name = mangleReservedKeywords name
